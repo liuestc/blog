@@ -15,6 +15,32 @@ vps: `vultr`
 os: `Center OS7`
 
 ### 安装`ngnix`
+[具体操作](http://blog.csdn.net/u012486840/article/details/52610320)
+>sudo rpm -Uvh http://nginx.org/packages/centos/7/noarch/RPMS/nginx-release-centos-7-0.el7.ngx.noarch.rpm
+
+报了个错
+
+`No package ngnix available.`
+
+问题原因：nginx位于第三方的yum源里面，而不在centos官方yum源里面
+解决方法：安装epel(Extra Packages for Enterprise Linux)
+
+具体命令
+
+    wget http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    rpm -ivh epel-release-latest-7.noarch.rpm
+    yum repolist      ##检查是否已添加至源列表
+
+然后又安装启动nginx，发现还是不行，访问ip不能出现`welcome nginx`.
+why?原因是防火墙
+执行下面命令
+
+    firewall-cmd --permanent --zone=public --add-port=80/tcp  //http协议基于TCP传输协议，放行80端口
+    firewall-cmd --list-all  //查看防火墙规则
+    firewall-cmd --query-service nginx //查看服务启动的状态
+
+[nginx安装后不能访问](http://xingdong365.com/network/321.html)
+
 #### nginx的基本使用
 安装后`nginx`在`etc`文件夹下,配置文件为`/nginx/conf.d/default.conf`,具体长这样：
 
