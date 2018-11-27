@@ -1,7 +1,8 @@
 ---
 title: install-git-server
 date: 2018-03-14 12:05:56
-tags:
+tags: '配置'
+categories: "config&&install"
 ---
 
 
