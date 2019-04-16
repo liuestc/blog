@@ -5,8 +5,201 @@
 	<title>aboutme</title>
 </head>
 <body>
-	<div>
-		heiheihei
+	<div id='app'>
+		
+		<p>{{a}}</p>
+		<p>{{b.c2.e}}</p>
+		See the attachment for additional information.The information I submitted is correct？if the information is correct,Please help me sign it as soon as possible, thank you
+		<input type="text" v-model='a'>
+
+I submitted my application on 29/03/2019 14:26, but the current status is still pending. I would like to ask when I will sign it. My information is as follows:
+
+Application: APP2019030049335
+PassportNum: EA42273238
+Arrival Date 27/04/2019
+
+
 	</div>
 </body>
+<script>
+	function Dep(){
+		this.subs=[]
+	}
+	Dep.prototype.addSub=function(fn){
+		this.subs.push(fn)
+	}
+	Dep.prototype.notify=function(){
+		this.subs.forEach(item=>item.update())
+	}
+	function Watcher(vm,exp,fn){
+		this.fn=fn
+		this.vm=vm
+		this.exp=exp
+		Dep.target=this
+		let arr=exp.split('.')
+		//console.log(arr,vm)
+		let val=vm
+		arr.forEach((k)=>{
+			val=val[k]
+		})
+		Dep.target=null
+
+	}
+	Watcher.prototype.update=function(){
+
+		let val=this.vm
+		let arr=this.exp.split('.')
+		arr.forEach((k)=>{
+			val=val[k]
+		})
+		this.fn(val)
+	}
+	// let watcher=new Watcher(function(){
+	// 	console.log(1)
+	// })
+
+	// let dep=new Dep()
+	// console.log(dep)
+	// dep.addSub(watcher)
+	// dep.notify()
+</script>
+<script>
+	function Vue(options={}){
+		this.$options=options //属性挂载
+		this.el=this.$options.el
+		var data=this._data=this.$options.data
+		observe(data)
+		// 代理到最外层
+		for(let key in data){
+			Object.defineProperty(this,key,{
+				enumerable:true,
+				get(){
+					return this._data[key]
+				},
+				set(newVal){
+					this._data[key]=newVal
+				}
+			})
+		}
+		// console.log(this.el)
+		new Compile(this.el,this)
+	}
+	function Compile(el,vm){
+		vm.$el=document.querySelector(el)
+		//创建文档碎片
+		//createDocumentFragment
+		//appendChild 如果被插入的节点已经存在于当前文档的文档树中,则那个节点会首先从原先的位置移除,然后再插入到新的位置.
+		let fragment=document.createDocumentFragment();
+		while(child=vm.$el.firstChild){
+			fragment.appendChild(child)
+		}
+		// console.log('fragment',fragment)
+		replace(fragment)
+		function replace(fragment){
+			Array.from(fragment.childNodes).forEach((item)=>{
+				let text=item.textContent;
+				let reg=/\{\{(.*)\}\}/
+				if(item.nodeType==3&&reg.test(text)){
+					//console.log(RegExp.$1)
+					//解析a.b
+					let arr=RegExp.$1.split('.')
+					//console.log(arr,vm)
+					let val=vm
+					arr.forEach((k)=>{
+						val=val[k]
+					})
+					//
+					new Watcher(vm,RegExp.$1,function(newVal){
+						item.textContent=text.replace(reg,newVal)
+					})
+
+					item.textContent=text.replace(reg,val)
+				}
+				if(item.nodeType==1){
+					let attribute=item.attributes
+					// console.log('attribute',attribute)
+					Array.from(attribute).forEach((attr)=>{
+						let name=attr.name
+						let exp=attr.value
+						// console.log(name,exp)
+						if(name.indexOf('v-')==0){
+							item.value=vm[exp]
+							new Watcher(vm,exp,function(newVal){
+								item.value=newVal
+							})
+							item.addEventListener('input',function(e){
+								let newVal=e.target.value;
+								console.log(vm[exp],newVal)
+								vm[exp]=newVal
+							})
+						}
+					})
+				}
+				if(item.childNodes){
+					replace(item)
+				}
+			})
+		}
+		vm.$el.appendChild(fragment)
+	}
+
+	function observe(data){
+		if(typeof data=='object'&&data){
+			return new Observe(data)
+		}
+		else{
+			return
+		}
+
+		
+	}
+	function Observe(data){
+		let dep=new Dep()
+		for(let i in data){
+			let val=data[i]
+			observe(val)
+			Object.defineProperty(data,i,{
+				// configurable:true,
+				enumerable:true,
+				get(){
+					// console.log('get')
+					Dep.target&&dep.addSub(Dep.target)
+					return val
+				},
+				set(newVal,oldVal){
+					if(val!==newVal){
+						val=newVal
+						observe(newVal)
+						dep.notify()
+					}
+					return;
+					
+				} 
+			})
+		}
+	}
+
+</script>
+
+
+<script>
+	let data={
+		a:'heihei',
+		b:{
+			c:'test',
+			c2:{
+				e:"里层"
+			}
+		}
+	}
+
+	let ljd=new Vue({
+		data:data,
+		el:'#app'
+	})
+
+
+	// console.log(data)
+
+</script>
 </html>

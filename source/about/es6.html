@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+</head>
+<body>
+	
+</body>
+<script>
+	const PENDING='pending'
+	const RESOLVE='resolve'
+	const REJECTED='rejected'
+	function MyPromise(fn){
+		const that=this
+		this.status=PENDING
+		this.val=null
+		this.resolveList=[]
+		this.rejectedList=[]
+		function resolve(val){
+			if(that.status==PENDING){
+				that.status=RESOLVE
+				that.val=val
+				that.resolveList.map((cb)=>cb(that.val))
+
+			}
+
+		}
+		function rejected(val){
+			if(that.status==PENDING){
+				that.status=REJECTED
+				that.val=val
+				that.rejectedList.map((cb)=>cb(that.val))
+
+			}
+		}
+
+		try{
+			fn(resolve,rejected)
+		}
+		catch(e){
+			rejected(e)
+		}
+	}
+
+	MyPromise.prototype.then=function(onFulfilled,onRejected){
+		const that=this
+		if(that.status==PENDING){
+			that.resolveList.push(onFulfilled)
+			that.rejectedList.push(onRejected)
+		}
+		if(that.status==RESOLVE){
+			onFulfilled(that.val)
+		}
+		if(that.status==REJECTED){
+			onRejected(that.val)
+		}
+	}
+</script>
+<script>
+	let p1=new MyPromise((resolve,reject)=>{
+		setTimeout(()=>{
+			let num=Math.random()
+			console.log('num',num)
+			if(num>.5){
+				resolve('成功')
+			}
+			else{
+				reject('失败')
+			}
+		},2000)
+	})
+	p1.then(function(val){
+		console.log(val)
+	},function(val){
+		console.log("失败："+val)
+	})
+</script>
+
+<script>
+	function Test(fn){
+		function a(){
+			console.log('a')
+		}
+		function b(){
+			console.log('b')
+		}
+
+		fn(a,b)
+	}
+	p2=new Test(function fn(a,b){
+		a()
+	})
+
+	console.log(p2.a)
+</script>
+
+</html>

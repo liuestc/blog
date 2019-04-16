@@ -151,11 +151,6 @@ library.book2="test2"
 
 
 
-
-
-
-
-
 #### 相关链接
 
 [观察者模式](https://github.com/Kelichao/javascript.basics/issues/22)
