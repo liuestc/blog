@@ -27,6 +27,42 @@ tags:
 ```
 
 大致结构如下
+思考：Promise是一个构造函数，传入一个函数，并执行该函数，其中有resolve/reject两个方法进行状态转换。
+
+大致结构
+
+```
+new Promise(fn){
+
+    //resolve/reject 状态转换
+
+    function resolve(value){
+        if(state=='pending'){
+            state='resolve'
+            cbResolve.forEach((cb)=>cb(value))
+        }
+    }
+
+    function reject(resolve){
+        
+    }
+
+    //最后需执行这个函数
+    fn(resolve,reject)
+
+
+}
+
+Promise.prototype.then=function(resolveFn,rejectedFn){
+    if(this.state==resolve){
+        resolveFn(this.value)
+    }
+}
+
+
+```
+
+具体代码如下：
 
 ```
     const PENDING='pending'
