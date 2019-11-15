@@ -124,7 +124,8 @@ constructor方法是类的默认方法，通过new命令生成对象实例时，
 
 + `static`
 类相当于实例的原型，所有在类中定义的方法，都会被实例继承。如果在一个方法前，加上static关键字，就表示该方法不会被实例继承，而是直接通过类来调用，这就称为“静态方法”。
-```
+
+```js
 class Foo {
   static classMethod() {
     return 'hello';
