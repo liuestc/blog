@@ -38,6 +38,75 @@ tags:
         },
     ```
 
+5. 巨坑
+    [和这个一模一样](https://blog.csdn.net/weixin_42142057/article/details/97655591)
+    场景：下载文件后重命名
+
+    多简单，`responseType:blob` ,然后调用download方法不就行了啊
+
+    ```js
+    axios({
+        method: 'get',
+        url: this.url,
+        responseType: 'blob',
+    }).then(res => {
+        downloadFile(res, this.download)
+    })
+    // 下载方法
+    export const downloadFile = (data, fileName = '') => {
+    if (data.data.type === 'application/json' || data.data.type === 'text/html;charset=utf-8') {
+        let reader = new FileReader()
+        reader.readAsText(data.data)
+        reader.onload = function (res) {
+        iView.Notice.error({
+            title: '操作失败',
+            desc: JSON.parse(res.target.result).message,
+            duration: 0
+        })
+        }
+    } else {
+        let contentDisposition = data.headers['content-disposition'].split(';')
+        let fileSuffix = ''
+
+        for (let i = 0; i < contentDisposition.length; i++) {
+        let item = contentDisposition[i]
+        item = item.replace(/\"/g, '')
+
+        if (item.includes('filename=')) {
+            let temp = item.split('.')
+            fileSuffix = temp[temp.length - 1]
+            break
+        }
+        }
+
+        if (!fileSuffix) {
+        iView.Notice.error({
+            title: '操作失败',
+            desc: '下载失败',
+            duration: 0
+        })
+        }
+
+        let blob = new Blob([data.data], { type: 'application/pdf' })
+        // console.log(blob, blob)
+        let link = document.createElement('a')
+        link.href = window.URL.createObjectURL(blob)
+        link.download = fileName + '.' + fileSuffix
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+    }
+    }
+    ```
+
+    后端不用设置什么，前端的设置 `responseType:blob` 就行，打印下这个
+
+    ![blob](https://i.loli.net/2019/11/29/vYUeB21VpJXtKSC.png)
+
+    返回的不是blob就排查原因
+
+    [修改文件名](https://www.jianshu.com/p/6545015017c4)
+
 ---
 
 技巧：
@@ -71,3 +140,91 @@ tags:
     }
     //在父组件下面所有的子组件都可以利用inject
     ```
+
+3. 权限管理问题
+
+    经常遇到的场景是，按钮根据角色或者权限显示与否
+
+    我们可以用指令来控制
+
+    ```js
+    Vue.directive('permission', {
+    bind: function (el, binding, vnode) {
+        let value=binding.value
+        const permissionList=[1,2,3,4]
+        let hasPermission=permissionList.includes(value)
+        if(!hasPermission){
+        el && el.parentNode ;
+        el.parentNode.removeChild(el)
+        //el.disabled=true
+        }
+    },
+    update:function (el, binding, vnode) {
+    },
+    })
+    ```
+
+4. 文件引入问题
+    vue 项目中如需要全局注册一些组件，通常就是 先 import 然后再在 components 里再注册，组件多了这样比较麻烦，可以利用webpack的 require.context引入并注册文件。
+
+    > 可以使用 require.context() 方法来创建自己的（模块）上下文，这个方法有 3 个参数：要搜索的文件夹目录，是否还应该搜索它的子目录，以及一个匹配文件的正则表达式。
+
+    ```js
+    const path = require('path')
+    const files = require.context('@/components/home', false, /\.vue$/)
+    const modules = {}
+    files.keys().forEach(key => {
+    const name = path.basename(key, '.vue')
+    modules[name] = files(key).default || files(key)
+    })
+    components:modules
+    ```
+
+5. 继发和并发
+
+    常见需求是先初始化optionsList，再请求详情，如何设计？
+
+    1. promise.all
+
+    ```js
+    await Promise.all([
+      this.$store.dispatch('getUserList'),
+      this.$store.dispatch('apiListByType', 'db_account_apply_status'),
+      this.$store.dispatch('apiListByType', 'db_account_apply_type')
+    ])
+    ```
+
+    当然由于是dispatch更新store，不返回什么，所以要加 await 才会和 `getList()` 异步
+
+    `promise.all` 存在的问题, 我得手动在里面加，如果我想用循环呢？
+
+    ```js
+    async initOptionList () {
+      for (let key in this.optList) {
+        await this.$store.dispatch('apiListByType', key)
+        this.optList[key] = this.$store.state.options[key]
+      }
+    }
+    ```
+
+    上面这个函数是继发执行的？如何修改？
+
+    ```js
+    async initOptionList () {
+      let awaitList = []
+      for (let key in this.optList) {
+        awaitList.push(this.$store.dispatch('apiListByType', key))
+      }
+      for (let item of awaitList) {
+        await item
+      }
+      for (let key in this.optList) {
+        this.optList[key] = this.$store.state.options[key]
+      }
+      this.getList()
+    }
+    ```
+
+    写了三个循环，好像也不怎么样，就这样吧，好像也没别的好办法了
+
+    [await继发和并发](https://www.cnblogs.com/xbblogs/p/8946912.html)
